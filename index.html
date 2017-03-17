@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title></title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.33.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.33.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+<script>
+
+"use strict";
+function toRadians(angleInDegrees) {
+  return angleInDegrees * Math.PI / 180;
+}
+
+function toDegrees(angleInRadians) {
+  return angleInRadians * 180 / Math.PI;
+}
+
+function offset(c1, distance, bearing) {
+  var lat1 = toRadians(c1[1]);
+  var lon1 = toRadians(c1[0]);
+  var dByR = distance / 6378137; // distance divided by 6378137 (radius of the earth) wgs84
+  var lat = Math.asin(
+    Math.sin(lat1) * Math.cos(dByR) +
+    Math.cos(lat1) * Math.sin(dByR) * Math.cos(bearing));
+  var lon = lon1 + Math.atan2(
+      Math.sin(bearing) * Math.sin(dByR) * Math.cos(lat1),
+      Math.cos(dByR) - Math.sin(lat1) * Math.sin(lat));
+  return [toDegrees(lon), toDegrees(lat)];
+}
+
+function circleToPolygon(center, radius, numberOfSegments) {
+  var n = numberOfSegments ? numberOfSegments : 32;
+  var flatCoordinates = [];
+  var coordinates = [];
+  for (let i = 0; i < n; ++i) {
+    flatCoordinates.push.apply(flatCoordinates, offset(center, radius, 2 * Math.PI * i / n));
+  }
+  flatCoordinates.push(flatCoordinates[0], flatCoordinates[1]);
+
+  for (let i = 0, j = 0; j < flatCoordinates.length; j += 2) {
+    coordinates[i++] = flatCoordinates.slice(j, j + 2);
+  }
+
+  return {
+    type: 'Polygon',
+    coordinates: [coordinates]
+  };
+};
+
+
+const coordinates = [-27.4575887, -58.99029]; //[lon, lat]
+const radius = 100;                           // in meters
+const numberOfEdges = 32;                     //optional that defaults to 32
+
+let polygon = circleToPolygon(coordinates, radius, numberOfEdges);
+
+console.log('yo poly', polygon);
+
+// I stole this key as well so go ahead
+mapboxgl.accessToken = 'pk.eyJ1IjoiZmVsaXBlMDAiLCJhIjoiY2lzaGxzNXU3MDA1NDJ5cGlybWQ4c285cCJ9.LF3B-PJnBBFyF7xZSaK2og';
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v9',
+    center: [-68.13734351262877, 45.137451890638886],
+    zoom: 5,
+    pitch: 35
+});
+
+map.on('load', function () {
+
+    map.addLayer({
+        'id': 'maine',
+        'type': 'fill-extrusion',
+        'source': {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Polygon',
+                    'coordinates': [
+                      [
+                        [-67.13734351262877, 45.137451890638886],
+                        [-66.96466, 44.8097],
+                        [-68.03252, 44.3252],
+                        [-69.06, 43.98],
+                        [-70.11617, 43.68405],
+                        [-70.64573401557249, 43.090083319667144],
+                        [-70.75102474636725, 43.08003225358635],
+                        [-70.79761105007827, 43.21973948828747],
+                        [-70.98176001655037, 43.36789581966826],
+                        [-70.94416541205806, 43.46633942318431],
+                        [-71.08482, 45.3052400000002],
+                        [-70.6600225491012, 45.46022288673396],
+                        [-70.30495378282376, 45.914794623389355],
+                        [-70.00014034695016, 46.69317088478567],
+                        [-69.23708614772835, 47.44777598732787],
+                        [-68.90478084987546, 47.184794623394396],
+                        [-68.23430497910454, 47.35462921812177],
+                        [-67.79035274928509, 47.066248887716995],
+                        [-67.79141211614706, 45.702585354182816],
+                        [-67.13734351262877, 45.137451890638886]
+                      ]
+                    ]
+                },
+                'properties': {
+                  'color': 'red',
+                  'base_height' : 100,
+                  'height' : 30000
+                }
+            }
+        },
+        'layout': {},
+        'paint': {
+            'fill-extrusion-color': {
+              // Get fill-extrusion-height from the source 'height' property.
+              'property': 'color',
+              'type': 'identity'
+            },
+            'fill-extrusion-height': {
+              // Get fill-extrusion-height from the source 'height' property.
+              'property': 'height',
+              'type': 'identity'
+            },
+            'fill-extrusion-base': {
+              // Get fill-extrusion-base from the source 'base_height' property.
+              'property': 'base_height',
+              'type': 'identity'
+            },
+            // Make extrusions slightly opaque for see through indoor walls.
+            'fill-extrusion-opacity': 0.5
+        }
+    });
+});
+</script>
+
+</body>
+</html>
